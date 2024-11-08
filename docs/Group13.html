@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>賞味期限管理カレンダー</title>
+  <style>
+    /* メインページの全体的な色やフォントサイズ */
+    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; background-color: #f9f9f9; font-size: 1.1em; }
+    h1 { margin-bottom: 10px; font-size: 1.8em; }
+    .main-container { display: flex; gap: 20px; }
+    .calendar-wrapper { width: 400px; }
+    .calendar-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; font-size: 1.1em; white-space: nowrap; }
+    .calendar-controls button { padding: 2px 12px; font-size: 0.9em; background-color: #00796b; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .calendar-controls button:hover { background-color: #004d40; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); font-size: 1em; }
+    .day-name { color: #888; font-size: 1em; text-align: center; }
+    .day { padding: 10px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1em; color: #333; position: relative; }
+    .day:hover { background-color: #e0f7fa; cursor: pointer; }
+    .day .marker { width: 8px; height: 8px; border-radius: 50%; position: absolute; bottom: 5px; background-color: #ff5252; }
+    .item-list, .expired-list { width: 400px; font-size: 1em; max-height: 350px; overflow-y: auto; }
+    .item-list .item-header, .expired-list .item-header { position: sticky; top: 0; background-color: #f9f9f9; z-index: 1; }
+    .item-header, .item, .expired-item { display: grid; grid-template-columns: 1fr 2fr 1.2fr 70px 70px; gap: 8px; align-items: center; padding: 6px; font-size: 0.9em; white-space: nowrap; }
+    .item-header { font-weight: bold; color: #333; border-bottom: 1px solid #ddd; }
+    .item-header span:nth-child(3) { padding-left: 16px; }
+    .expired-item span:nth-child(3) { padding-left: 16px; color: red; }
+    .item span:nth-child(1), .item span:nth-child(3), .expired-item span { white-space: nowrap; }
+    .item span:nth-child(2) { white-space: normal; }
+    .form-container { width: 400px; display: flex; flex-direction: column; gap: 10px; font-size: 1em; margin-top: 20px; }
+    input, select, button { padding: 10px; font-size: 1em; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; }
+    button { background-color: #00796b; color: #fff; cursor: pointer; }
+    button:hover { background-color: #004d40; }
+    .eat-button { padding: 4px 8px; font-size: 0.9em; color: #fff; background-color: #ff9800; border: none; border-radius: 3px; cursor: pointer; }
+    .eat-button:hover { background-color: #f57c00; }
+    .freeze-button { padding: 4px 8px; font-size: 0.9em; color: #fff; background-color: #2196f3; border: none; border-radius: 3px; cursor: pointer; }
+    .freeze-button.disabled { background-color: #b0bec5; cursor: not-allowed; }
+    .discard-button { padding: 4px 8px; font-size: 0.9em; color: #fff; background-color: #e53935; border: none; border-radius: 3px; cursor: pointer; }
+    .discard-button:hover { background-color: #c62828; }
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9; }
+    .popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); display: none; z-index: 10; font-size: 1.1em; }
+    .popup h2, .expired-message { font-weight: bold; font-size: 1.1em; color: #000; margin-bottom: 8px; }
+    .popup div { margin-bottom: 8px; }
+    .popup button { padding: 5px 10px; background-color: #00796b; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .popup button:hover { background-color: #004d40; }
+    .tooltip { position: absolute; padding: 5px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); font-size: 0.9em; white-space: nowrap; opacity: 0; transition: opacity 0.2s ease; }
+
+    /* メモボタンとログアウトボタン配置と色 */
+    .memo-button {
+      position: fixed;
+      bottom: 15px;
+      right: 110px;
+      padding: 8px;
+      font-size: 0.7em;
+      width: auto;
+      min-width: 80px;
+      background-color: #00796b;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .memo-button:hover { background-color: #004d40; }
+
+    .logout-button {
+      position: fixed;
+      bottom: 15px;
+      right: 20px;
+      padding: 8px;
+      font-size: 0.7em;
+      width: auto;
+      min-width: 80px;
+      background-color: #e53935;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .logout-button:hover { background-color: #c62828; }
+  </style>
+</head>
+<body>
+
+
+  <h1>賞味期限管理カレンダー</h1>
+  
+  <!-- カレンダー月移動 -->
+  <div class="main-container">
+    <div class="calendar-wrapper">
+      <div class="calendar-controls">
+        <button onclick="prevMonth()">前の月</button>
+        <div id="calendarTitle"></div>
+        <button onclick="nextMonth()">次の月</button>
+      </div>
+      <div class="calendar" id="calendar"></div>
+    </div>
+
+    <!-- 期限前アイテムの表示 -->
+    <div class="item-list">
+      <div class="item-header">
+        <span>カテゴリ</span>
+        <span>名前</span>
+        <span>期限</span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- 期限切れアイテムの表示 -->
+    <div class="expired-list">
+      <div class="item-header">
+        <span>カテゴリ</span>
+        <span>名前</span>
+        <span>期限切れ日</span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- アイテム追加 -->
+  <div class="form-container">
+    <input type="text" id="itemName" placeholder="名前" required>
+    <select id="category">
+      <option value="肉類">肉類</option>
+      <option value="野菜">野菜</option>
+      <option value="飲み物">飲み物</option>
+      <option value="乳製品">乳製品</option>
+      <option value="冷凍食">冷凍食</option>
+      <option value="その他">その他</option>
+    </select>
+    <input type="date" id="expiryDate" required>
+    <button onclick="addItem()">追加</button>
+  </div>
+
+  <!-- ポップアップ（期限前後）表示 -->
+  <div class="overlay" id="overlay"></div>
+  <div id="popup" class="popup">
+    <h2 id="popupTitle">期限が迫っています！</h2>
+    <div id="popupList"></div>
+    <button onclick="closePopup()">閉じる</button>
+  </div>
+
+  <!-- メモボタンとログアウトボタン -->
+  <button class="memo-button" onclick="window.location.href='memo.html'">メモ</button>
+  <button class="logout-button" onclick="window.location.href='Login.html'">ログアウト</button>
+
+  <script>
+    // カレンダー　現在の月と年を保持
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      displayCalendar();   // カレンダー表示
+      displayItems();      // アイテムリスト表示
+      checkExpiringItems(); // 期限切れや期限間近のアイテムの通知
+    });
+
+    // カレンダー表示
+    function displayCalendar() {
+      const calendar = document.getElementById("calendar");
+      const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const calendarTitle = document.getElementById("calendarTitle");
+      calendarTitle.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+      calendar.innerHTML = '';
+
+      daysOfWeek.forEach(day => {
+        const dayName = document.createElement("div");
+        dayName.className = "day-name";
+        dayName.textContent = day;
+        calendar.appendChild(dayName);
+      });
+
+      for (let i = 0; i < firstDay; i++) {
+        calendar.appendChild(document.createElement('div'));
+      }
+
+      // 日付生成とイベント関連
+      for (let date = 1; date <= lastDate; date++) {
+        const dayCell = document.createElement("div");
+        dayCell.className = "day";
+        dayCell.textContent = date;
+
+        // 期限日付にマーカー（カレンダー）
+        const itemsOnDate = getItemsOnDate(currentYear, currentMonth, date);
+        if (itemsOnDate.length > 0) {
+          const marker = document.createElement("div");
+          marker.className = "marker";
+          dayCell.appendChild(marker);
+        }
+
+        dayCell.addEventListener("mouseover", (event) => showItemsOnDateTooltip(itemsOnDate, event));
+        dayCell.addEventListener("mouseout", () => hideItemsTooltip());
+        
+        calendar.appendChild(dayCell);
+      }
+    }
+
+    // 日付ごとにアイテム取得
+    function getItemsOnDate(year, month, date) {
+      const items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+      const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+      return items.filter(item => item.date === formattedDate);
+    }
+
+    // カーソルでアイテム情報を表示するアニメーション（カレンダー）
+    function showItemsOnDateTooltip(itemsOnDate, event) {
+      const existingTooltip = document.getElementById("tooltip");
+      if (existingTooltip) existingTooltip.remove();
+
+      if (itemsOnDate.length > 0) {
+        const tooltip = document.createElement("div");
+        tooltip.id = "tooltip";
+        tooltip.className = "tooltip";
+        tooltip.innerHTML = itemsOnDate.map(item => `${item.name} (${item.category})`).join("<br>");
+        
+        tooltip.style.left = `${event.pageX + 10}px`;
+        tooltip.style.top = `${event.pageY + 10}px`;
+        document.body.appendChild(tooltip);
+        
+        setTimeout(() => {
+          tooltip.style.opacity = "1";
+          tooltip.style.transition = "opacity 0.2s ease";
+        }, 0);
+      }
+    }
+
+    // ツールチップを隠す関数（通知時）
+    function hideItemsTooltip() {
+      const tooltip = document.getElementById("tooltip");
+      if (tooltip) {
+        tooltip.style.opacity = "0";
+        setTimeout(() => tooltip.remove(), 200);
+      }
+    }
+
+    // エラー表記（未入力や期限後登録）
+    function addItem() {
+      const itemName = document.getElementById("itemName").value;
+      const category = document.getElementById("category").value;
+      const expiryDate = document.getElementById("expiryDate").value;
+
+      if (!expiryDate) {
+        showPopup("入力されていない項目があります", true); // エラー表示
+        return;
+      }
+      
+      const now = new Date().toISOString().split('T')[0];
+      if (expiryDate < now) {
+        showPopup("期限が過ぎているものは登録できません", true);
+        return;
+      }
+
+      // アイテムデータ構造（個別id付与）
+      if (itemName && expiryDate) {
+        const item = { name: itemName, category: category, date: expiryDate, frozen: category === "冷凍食" };
+        
+        let items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+        items.push(item);
+        localStorage.setItem("expiryItems", JSON.stringify(items));
+
+        document.getElementById("itemName").value = '';
+        document.getElementById("expiryDate").value = '';
+        
+        displayItems();
+        displayCalendar();
+      }
+    }
+
+    // ポップアップ表示
+    function showPopup(message, isError = false) {
+      const popupTitle = document.getElementById("popupTitle");
+      popupTitle.textContent = isError ? "エラー" : "期限が迫っています！";
+      document.getElementById("popupList").innerHTML = message || "";
+      document.getElementById("overlay").style.display = 'block';
+      document.getElementById("popup").style.display = 'block';
+    }
+
+    // ポップアップを閉じる
+    function closePopup() {
+      document.getElementById("overlay").style.display = 'none';
+      document.getElementById("popup").style.display = 'none';
+    }
+
+    // 期限前および期限切れのアイテムをリスト表示
+    function displayItems() {
+      const itemList = document.querySelector(".item-list");
+      const expiredList = document.querySelector(".expired-list");
+      itemList.innerHTML = `
+        <div class="item-header">
+          <span>カテゴリ</span>
+          <span>名前</span>
+          <span>期限</span>
+          <span></span>
+          <span></span>
+        </div>
+      `;
+      expiredList.innerHTML = `
+        <div class="item-header">
+          <span>カテゴリ</span>
+          <span>名前</span>
+          <span>期限切れ日</span>
+          <span></span>
+        </div>
+      `;
+
+      const items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+      items.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      items.forEach((item, index) => {
+        const expiryDate = new Date(item.date);
+        expiryDate.setHours(0, 0, 0, 0);
+
+        const listItem = document.createElement("div");
+        listItem.className = expiryDate < now ? "expired-item" : "item";
+        listItem.innerHTML = `
+          <span>${item.category}</span>
+          <span>${item.name}</span>
+          <span class="${expiryDate < now ? 'expired' : ''}">${item.date}</span>
+          ${expiryDate < now ? `<button class="discard-button" onclick="removeItem(${index}, true)">捨てた</button>` : `
+          <button class="eat-button" onclick="removeItem(${index}, false)">食べた</button>
+          ${item.category !== "冷凍食" ? `<button class="freeze-button ${item.frozen ? 'disabled' : ''}" onclick="freezeItem(${index})" ${item.frozen ? 'disabled' : ''}>冷凍</button>` : '<button class="freeze-button disabled" disabled>冷凍</button>'}
+          `}
+        `;
+
+        if (expiryDate < now) {
+          expiredList.appendChild(listItem);
+        } else {
+          itemList.appendChild(listItem);
+        }
+      });
+    }
+
+    // 冷凍ボタン
+    function freezeItem(index) {
+      let items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+      if (!items[index].frozen) {
+        const expiryDate = new Date(items[index].date);
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        items[index].date = expiryDate.toISOString().split('T')[0];
+        items[index].frozen = true;
+        localStorage.setItem("expiryItems", JSON.stringify(items));
+        displayItems();
+        displayCalendar();
+      }
+    }
+
+    // アイテム削除
+    function removeItem(index, isExpired) {
+      let items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+      items.splice(index, 1);
+      localStorage.setItem("expiryItems", JSON.stringify(items));
+      displayItems();
+      displayCalendar();
+    }
+
+    // 前月以前表示（カレンダー）
+    function prevMonth() {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      displayCalendar();
+    }
+
+    // 次月以降表示（カレンダー）
+    function nextMonth() {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      displayCalendar();
+    }
+
+    // 通知表示（期限前後）
+    function checkExpiringItems() {
+      const items = JSON.parse(localStorage.getItem("expiryItems")) || [];
+      const now = new Date();
+      const popupList = document.getElementById("popupList");
+      popupList.innerHTML = '';
+
+      const expiringItems = items.filter(item => {
+        const expiryDate = new Date(item.date);
+        const timeDiff = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        return timeDiff >= 0 && timeDiff <= 3;
+      }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const expiredItems = items.filter(item => {
+        const expiryDate = new Date(item.date);
+        return expiryDate < now && expiryDate < new Date().setDate(new Date().getDate() - 1);
+      }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      expiringItems.forEach(item => {
+        const timeDiff = Math.ceil((new Date(item.date) - now) / (1000 * 60 * 60 * 24));
+        const listItem = document.createElement("div");
+        listItem.textContent = `${item.name}の賞味期限はあと${timeDiff}日です！`;
+        popupList.appendChild(listItem);
+      });
+
+      if (expiredItems.length > 0) {
+        const expiredMessage = document.createElement("div");
+        expiredMessage.className = "expired-message";
+        expiredMessage.textContent = "期限が切れました！";
+        popupList.appendChild(expiredMessage);
+
+        expiredItems.forEach(item => {
+          const expiredItem = document.createElement("div");
+          expiredItem.textContent = `${item.name}の賞味期限は${item.date}でした`;
+          popupList.appendChild(expiredItem);
+        });
+      }
+
+      if (expiringItems.length > 0 || expiredItems.length > 0) {
+        document.getElementById("overlay").style.display = 'block';
+        document.getElementById("popup").style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
