@@ -20,12 +20,14 @@
       <input type="password" id="password" placeholder="パスワード" required>
       <button type="submit">ログイン</button>
     </form>
+    
   </div>
 
   <script>
     document.getElementById('loginForm').addEventListener('submit', function(event) {
       event.preventDefault();
       // ログイン処理（ここで認証を行うこともできます）
+      alert('ログインしました');
       window.location.href = 'Group13.html'; // リダイレクト先のHTMLファイル
     });
   </script>
