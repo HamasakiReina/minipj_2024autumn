@@ -1,4 +1,5 @@
 2024年秋季　ゼミ開発物<br>
+http://gms.gdl.jp/~rh2022025/Lec_DS-Applications_App/minipj.html   <br>
 ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー<br>
 
 🍱 賞味期限管理カレンダーアプリ<br>
