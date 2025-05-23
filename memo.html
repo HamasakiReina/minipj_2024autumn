@@ -1,0 +1,178 @@
+<!Doctype html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メモ</title>
+
+    <style>
+        .return-button {
+            position: fixed;
+            bottom: 15px;
+            right: 110px;
+            padding: 8px;
+            font-size: 0.7em;
+            width: auto;
+            min-width: 80px;
+            background-color: #00796b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .return-button:hover { background-color: #004d40; }
+
+        .logout-button {
+            position: fixed;
+            bottom: 15px;
+            right: 20px;
+            padding: 8px;
+            font-size: 0.7em;
+            width: auto;
+            min-width: 80px;
+            background-color: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .logout-button:hover { background-color: #c62828; }
+
+        .memo-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .memo-textarea {
+            width: 90%;
+            height: 200px;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .save-button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            font-size: 1em;
+            background-color: #00796b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .save-button:hover { background-color: #004d40; }
+
+        .memo-list {
+            margin-top: 30px;
+            width: 90%;
+        }
+
+        .memo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .delete-button {
+            padding: 5px 10px;
+            background-color: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .delete-button:hover { background-color: #c62828; }
+    </style>
+</head>
+
+<body>
+    <h1>メモ</h1>
+
+    <div class="memo-container">
+        <textarea id="memoText" class="memo-textarea" placeholder="ここにメモを書き込んでください..."></textarea>
+        <button class="save-button" onclick="saveMemo()">メモを保存</button>
+    </div>
+
+    <div class="memo-list" id="memoList">
+    </div>
+
+    <button class="return-button" onclick="window.location.href='Group13.html'">戻る</button>
+    <button class="logout-button" onclick="window.location.href='Login.html'">ログアウト</button>
+
+    <script>
+        // ページ読み込み時にローカルストレージからメモ一覧を取得して表示
+        window.onload = function() {
+            displayMemoList();
+        }
+
+        // メモ保存
+        function saveMemo() {
+            const memoContent = document.getElementById("memoText").value.trim();
+            if (memoContent === "") {
+                alert("メモ内容が空です！");
+                return;
+            }
+
+            const memo = {
+                content: memoContent,
+                date: new Date().toLocaleString()
+            };
+
+            const memos = JSON.parse(localStorage.getItem("memos")) || [];
+            memos.push(memo);
+            localStorage.setItem("memos", JSON.stringify(memos));
+
+            document.getElementById("memoText").value = "";
+            displayMemoList();
+            alert("メモが保存されました！");
+        }
+
+        // メモ一覧表示
+        function displayMemoList() {
+            const memoList = document.getElementById("memoList");
+            const memos = JSON.parse(localStorage.getItem("memos")) || [];
+            memoList.innerHTML = ""; 
+
+            memos.forEach((memo, index) => {
+                const memoItem = document.createElement("div");
+                memoItem.className = "memo-item";
+
+                const memoContent = document.createElement("div");
+                memoContent.innerText = `${memo.date}: ${memo.content}`;
+                memoContent.style.flexGrow = "1";
+
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "delete-button";
+                deleteButton.innerText = "削除";
+                deleteButton.onclick = function() {
+                    deleteMemo(index);
+                };
+
+                memoItem.appendChild(memoContent);
+                memoItem.appendChild(deleteButton);
+                memoList.appendChild(memoItem);
+            });
+        }
+
+        // メモ削除
+        function deleteMemo(index) {
+            const memos = JSON.parse(localStorage.getItem("memos")) || [];
+            memos.splice(index, 1); // 指定インデックスのメモを削除
+            localStorage.setItem("memos", JSON.stringify(memos));
+            displayMemoList();
+        }
+    </script>
+</body>
+</html>

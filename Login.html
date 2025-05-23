@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログインページ</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f9f9f9; }
+    .form-container { width: 300px; display: flex; flex-direction: column; gap: 10px; }
+    input, button { padding: 10px; font-size: 1em; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 5px; }
+    button { background-color: #00796b; color: #fff; cursor: pointer; }
+    button:hover { background-color: #004d40; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>ログイン</h2>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="ユーザー名" required>
+      <input type="password" id="password" placeholder="パスワード" required>
+      <button type="submit">ログイン</button>
+    </form>
+    
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      // ログイン処理（ここで認証を行うこともできます）
+      alert('ログインしました');
+      window.location.href = 'Group13.html'; // リダイレクト先のHTMLファイル
+    });
+  </script>
+</body>
+</html>
